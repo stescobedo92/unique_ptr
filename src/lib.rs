@@ -56,3 +56,17 @@ impl<T> UniquePtr<T> {
         &*self.deleter
     }
 }
+
+impl<T> Deref for UniquePtr<T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        unsafe { &*self.ptr }
+    }
+}
+
+impl<T> DerefMut for UniquePtr<T> {
+    fn deref_mut(&mut self) -> &mut T {
+        unsafe { &mut *self.ptr }
+    }
+}
