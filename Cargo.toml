@@ -1,0 +1,17 @@
+[package]
+name = "default_deleter"
+version = "0.1.0"
+edition = "2021"
+authors = ["Sergio Triana Escobedo <stescobedo.31@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = ""
+homepage = "https://github.com/stescobedo92/default_deleter"
+repository = "https://github.com/stescobedo92/default_deleter"
+keywords = ["lib"]
+readme = "README.md"
+categories = ["lib"]
+
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
