@@ -118,8 +118,6 @@ impl<T> UniquePtr<T, DefaultDelete<T>> {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
