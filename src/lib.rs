@@ -7,3 +7,8 @@ impl<T> DefaultDeleter {
         }
     }
 }
+
+struct UniquePtr<T> {
+    ptr: *mut T,
+    deleter: Box<dyn FnMut(*mut T)>,
+}
