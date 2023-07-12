@@ -1,72 +1,119 @@
-struct DefaultDeleter;
+use std::mem;
 
-impl<T> DefaultDeleter {
-    fn delete(ptr: *mut T) {
-        unsafe {
-            std::ptr::drop_in_place(ptr);
-        }
+struct DefaultDelete<T> {
+    _marker: std::marker::PhantomData<T>,
+}
+
+impl<T> DefaultDelete<T> {
+    fn new() -> Self {
+        DefaultDelete { _marker: std::marker::PhantomData }
     }
 }
 
-struct UniquePtr<T> {
+impl<T> Default for DefaultDelete<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+struct UniquePtr<T, Deleter = DefaultDelete<T>> {
     ptr: *mut T,
-    deleter: Box<dyn FnMut(*mut T)>,
+    deleter: Deleter,
 }
 
 impl<T> UniquePtr<T> {
-    fn new(ptr: *mut T) -> Self {
-        Self {
-            ptr,
-            deleter: Box::new(DefaultDeleter::delete),
+    fn new() -> Self {
+        UniquePtr { ptr: std::ptr::null_mut(), deleter: DefaultDelete::new() }
+    }
+
+    fn with_ptr(ptr: *mut T) -> Self {
+        UniquePtr { ptr, deleter: DefaultDelete::new() }
+    }
+}
+
+impl<T, Deleter> Drop for UniquePtr<T, Deleter> {
+    fn drop(&mut self) {
+        unsafe {
+            Box::from_raw(self.ptr);
         }
     }
+}
 
-    fn new_with_deleter(ptr: *mut T, deleter: impl FnMut(*mut T)) -> Self {
-        Self {
-            ptr,
-            deleter: Box::new(deleter),
-        }
+impl<T, Deleter> Clone for UniquePtr<T, Deleter>
+where
+    Deleter: Clone,
+{
+    fn clone(&self) -> Self {
+        Self::with_ptr_and_deleter(self.ptr, self.deleter.clone())
     }
+}
 
-    fn drop(self) {
-        (self.deleter)(self.ptr);
-    }
-
+impl<T, Deleter> UniquePtr<T, Deleter> {
     fn reset(&mut self, ptr: *mut T) {
-        (self.deleter)(self.ptr);
+        unsafe {
+            Box::from_raw(self.ptr);
+        }
         self.ptr = ptr;
     }
 
     fn release(&mut self) -> *mut T {
-        let ptr = self.ptr;
+        let old_ptr = self.ptr;
         self.ptr = std::ptr::null_mut();
-        ptr
+        old_ptr
     }
 
     fn swap(&mut self, other: &mut Self) {
-        std::mem::swap(self.ptr, other.ptr);
-        std::mem::swap(self.deleter, other.deleter);
+        mem::swap(&mut self.ptr, &mut other.ptr);
+        mem::swap(&mut self.deleter, &mut other.deleter);
     }
 
     fn get(&self) -> *mut T {
         self.ptr
     }
 
-    fn get_deleter(&self) -> &dyn FnMut(*mut T) {
-        &*self.deleter
+    fn with_ptr_and_deleter(ptr: *mut T, deleter: Deleter) -> Self {
+        UniquePtr { ptr, deleter }
     }
 }
 
-impl<T> Deref for UniquePtr<T> {
+impl<T, Deleter> std::ops::Deref for UniquePtr<T, Deleter> {
     type Target = T;
 
-    fn deref(&self) -> &T {
+    fn deref(&self) -> &Self::Target {
         unsafe { &*self.ptr }
     }
 }
 
-impl<T> DerefMut for UniquePtr<T> {
-    fn deref_mut(&mut self) -> &mut T {
+impl<T, Deleter> std::ops::DerefMut for UniquePtr<T, Deleter> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { &mut *self.ptr }
+    }
+}
+
+impl<T, Deleter> UniquePtr<T, Deleter> {
+    fn get_deleter(&self) -> &Deleter {
+        &self.deleter
+    }
+}
+
+impl<T, Deleter> From<UniquePtr<T, Deleter>> for Option<Box<T>> {
+    fn from(ptr: UniquePtr<T, Deleter>) -> Self {
+        if ptr.ptr.is_null() {
+            None
+        } else {
+            Some(unsafe { Box::from_raw(ptr.ptr) })
+        }
+    }
+}
+
+impl<T> UniquePtr<T, DefaultDelete<T>> {
+    fn into_raw(self) -> *mut T {
+        let ptr = self.ptr;
+        mem::forget(self);
+        ptr
+    }
+
+    fn from_raw(ptr: *mut T) -> Self {
+        UniquePtr::with_ptr(ptr)
     }
 }
