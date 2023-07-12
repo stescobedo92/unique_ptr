@@ -117,3 +117,47 @@ impl<T> UniquePtr<T, DefaultDelete<T>> {
         UniquePtr::with_ptr(ptr)
     }
 }
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_unique_ptr_creation() {
+        let ptr = Box::into_raw(Box::new(42));
+        let unique_ptr = UniquePtr::with_ptr(ptr);
+
+        assert_eq!(unsafe { *unique_ptr.ptr }, 42);
+    }
+
+    #[test]
+    fn test_unique_ptr_reset() {
+        let ptr1 = Box::into_raw(Box::new(42));
+        let mut unique_ptr = UniquePtr::with_ptr(ptr1);
+
+        let ptr2 = Box::into_raw(Box::new(99));
+        unique_ptr.reset(ptr2);
+
+        assert_eq!(unsafe { *unique_ptr.ptr }, 99);
+    }
+
+    #[test]
+    fn test_unique_ptr_release() {
+        let ptr = Box::into_raw(Box::new(42));
+        let mut unique_ptr = UniquePtr::with_ptr(ptr);
+
+        let released_ptr = unique_ptr.release();
+
+        assert_eq!(unsafe { *Box::from_raw(released_ptr) }, 42);
+    }
+
+    #[test]
+    fn test_unique_ptr_deref() {
+        let ptr = Box::into_raw(Box::new(42));
+        let unique_ptr = UniquePtr::with_ptr(ptr);
+
+        assert_eq!(unsafe { *unique_ptr.ptr }, 42);
+    }
+}
