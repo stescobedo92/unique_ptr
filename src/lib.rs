@@ -17,8 +17,8 @@ impl<T> Default for DefaultDelete<T> {
 }
 
 pub struct UniquePtr<T, Deleter = DefaultDelete<T>> {
-    ptr: *mut T,
-    deleter: Deleter,
+    pub ptr: *mut T,
+    pub deleter: Deleter,
 }
 
 impl<T> UniquePtr<T> {
