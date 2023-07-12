@@ -13,15 +13,15 @@ Here are some key similarities and differences between the two:
 use unique_ptr::UniquePtr;
 
 fn main() {
-    let ptr = Box::new(42);
-    let unique_ptr = UniquePtr::with_ptr(ptr);
+    let mut num = 100;
+    let ptr: *mut i32 = &mut num as *mut i32;
+    let unique = UniquePtr::with_ptr(ptr);
 
-    assert_eq!(unsafe { *unique_ptr.ptr }, 42);
+    unsafe {
+        *unique.ptr = 42;
+    }
 
-    let ptr2 = Box::new(99);
-    unique_ptr.reset(ptr2);
-
-    assert_eq!(unsafe { *unique_ptr.ptr }, 99);
+    assert_eq!(unsafe { *unique.ptr }, 42);
 }
 ```
 
